@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub Multi-Account SSH Guide</title>
+<style>
+  :root{
+    --ink:#1b2333; --muted:#5b6578; --line:#e3e7ef; --bg:#f6f8fc; --card:#ffffff;
+    --brand:#4f46e5; --brand2:#0ea5e9; --ok:#059669; --warn:#d97706; --bad:#dc2626;
+    --code-bg:#0f172a; --code-ink:#e2e8f0; --var:#fbbf24; --var-bg:rgba(251,191,36,.14);
+    --cmt:#94a3b8; --cmd:#7dd3fc;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  body{margin:0; background:var(--bg); color:var(--ink);
+       font:15px/1.65 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif}
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px 60px}
+
+  /* Hero */
+  .hero{background:linear-gradient(135deg,#312e81 0%,#4f46e5 45%,#0ea5e9 100%);
+        color:#fff; padding:56px 20px 64px; margin-bottom:-36px}
+  .hero .wrap{padding-bottom:0}
+  .hero .tag{display:inline-block; font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+             background:rgba(255,255,255,.16); padding:4px 12px; border-radius:99px}
+  .hero h1{font-size:38px; line-height:1.15; margin:14px 0 10px; font-weight:750}
+  .hero p{margin:0; opacity:.9; max-width:640px; font-size:16px}
+
+  /* Cards & sections */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
+        padding:28px 30px; margin:22px 0; box-shadow:0 6px 24px rgba(30,41,80,.06)}
+  h2{font-size:24px; margin:0 0 6px; display:flex; align-items:center; gap:12px}
+  h2 .n{flex:none; width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
+        background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; font-size:16px}
+  h3{font-size:17px; margin:26px 0 6px}
+  .sub{color:var(--muted); margin:0 0 14px}
+  p{margin:8px 0}
+
+  /* TOC */
+  .toc ol{margin:6px 0 0; padding-left:20px; columns:2; column-gap:40px}
+  .toc li{margin:3px 0}
+  .toc a{color:var(--brand); text-decoration:none}
+
+  /* Code */
+  pre{background:var(--code-bg); color:var(--code-ink); border-radius:12px; padding:14px 18px;
+      overflow-x:auto; font:13.5px/1.6 "Cascadia Code", Consolas, monospace; margin:10px 0 14px;
+      white-space:pre-wrap; word-break:break-word}
+  pre .c{color:var(--cmt)}
+  pre .k{color:var(--cmd)}
+  .v{color:var(--var); background:var(--var-bg); border-radius:4px; padding:0 4px;
+     font-weight:600; border-bottom:1px dashed var(--var)}
+  p .v, td .v, li .v{color:#b45309; background:#fef3c7; border-bottom-color:#d97706;
+     font-family:Consolas, monospace; font-size:13px}
+  code{font-family:Consolas, monospace; font-size:13px; background:#eef1f8; padding:1px 6px; border-radius:5px}
+
+  /* Steps */
+  .step{display:grid; grid-template-columns:44px 1fr; gap:14px; padding:16px 0; border-top:1px dashed var(--line)}
+  .step:first-of-type{border-top:0}
+  .step .dot{width:38px; height:38px; border-radius:50%; background:#eef2ff; color:var(--brand);
+             font-weight:700; display:grid; place-items:center; border:2px solid #c7d2fe}
+  .step h4{margin:6px 0 4px; font-size:16px}
+  .step > div{min-width:0}
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; margin:10px 0 6px; font-size:14px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:#f1f4fa; font-weight:650; color:#334155}
+  tr:last-child td{border-bottom:0}
+  .tbl{border:1px solid var(--line); border-radius:12px; overflow:hidden}
+
+  /* Callouts */
+  .note{border-radius:12px; padding:12px 16px; margin:14px 0; border-left:5px solid; font-size:14.5px}
+  .note b:first-child{display:block; margin-bottom:2px}
+  .info{background:#eff6ff; border-color:#3b82f6}
+  .tip{background:#ecfdf5; border-color:var(--ok)}
+  .warn{background:#fffbeb; border-color:var(--warn)}
+  .danger{background:#fef2f2; border-color:var(--bad)}
+
+  /* Flow diagram */
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:16px 0}
+  .flow .box{flex:1 1 150px; background:#f8faff; border:1.5px solid #c7d2fe; border-radius:12px; padding:12px; font-size:13px}
+  .flow .box b{display:block; color:var(--brand); font-size:12px; text-transform:uppercase; letter-spacing:.06em}
+  .flow .box code{font-size:12px; word-break:break-all}
+  .flow .arr{align-self:center; color:var(--brand); font-size:22px; font-weight:700}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:14px; margin:6px 0 4px}
+  .badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px;
+         text-transform:uppercase; letter-spacing:.05em; vertical-align:middle}
+  .b-once{background:#e0e7ff; color:#3730a3}
+  .b-acct{background:#fef3c7; color:#92400e}
+  .b-repo{background:#dcfce7; color:#166534}
+
+  ul.check{list-style:none; padding-left:0}
+  ul.check li{padding-left:28px; position:relative; margin:6px 0}
+  ul.check li::before{content:"✓"; position:absolute; left:0; top:0; width:20px; height:20px; border-radius:6px;
+     background:#dcfce7; color:var(--ok); font-weight:800; display:grid; place-items:center; font-size:12px}
+
+  footer{text-align:center; color:var(--muted); font-size:13px; margin-top:30px}
+
+  @media (max-width:640px){
+    .hero h1{font-size:28px} .card{padding:20px 18px} .toc ol{columns:1}
+    .flow .arr{transform:rotate(90deg); width:100%; text-align:center}
+  }
+  @media print{
+    @page{size:A4; margin:14mm 12mm}
+    body{background:#fff; font-size:12.5px}
+    .hero{padding:34px 20px 44px}
+    .card{box-shadow:none; break-inside:auto; page-break-inside:auto}
+    pre, .note, .step, table, .flow{break-inside:avoid}
+    h2, h3{break-after:avoid}
+    .pb{break-before:page}
+    .toc a{color:var(--ink)}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="tag">Windows · Git · SSH</span>
+    <h1>Using Multiple GitHub Accounts<br>on One Computer with SSH</h1>
+    <p>What was set up for <b>Mohanvamsi4405</b>, how to do the whole thing again from scratch, and how to add any new GitHub account later.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- TOC -->
+<section class="card toc">
+  <h2 style="font-size:19px">Contents</h2>
+  <ol>
+    <li><a href="#done">What I did (Mohanvamsi4405)</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#vars">The values you change</a></li>
+    <li><a href="#scratch">From scratch: full setup</a></li>
+    <li><a href="#new">Adding another account</a></li>
+    <li><a href="#repo">Using an account in a repo</a></li>
+    <li><a href="#accounts">My accounts right now</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+    <li><a href="#cheat">Cheat sheet</a></li>
+  </ol>
+</section>
+
+<!-- 1. WHAT WAS DONE -->
+<section class="card" id="done">
+  <h2><span class="n">1</span>What I did (Mohanvamsi4405)</h2>
+  <p class="sub">These are the exact commands I ran to connect the new account <b>Mohanvamsi4405</b> to the repo in <code>D:\GIT</code>, while keeping my existing <b>theaishastra</b> account working as before.</p>
+
+  <div class="step"><div class="dot">1</div><div>
+    <h4>Generated a new SSH key just for this account</h4>
+<pre>ssh-keygen -t ed25519 -C "chitradamohanvamsi33@gmail.com" -f "%USERPROFILE%\.ssh\id_ed25519_mohan_github_33"</pre>
+    <p>This made two files in <code>C:\Users\mohan\.ssh\</code>: <code>id_ed25519_mohan_github_33</code> (private, never share it) and <code>id_ed25519_mohan_github_33.pub</code> (public, this one goes to GitHub).</p>
+  </div></div>
+
+  <div class="step"><div class="dot">2</div><div>
+    <h4>Printed the public key and copied it</h4>
+<pre>type "%USERPROFILE%\.ssh\id_ed25519_mohan_github_33.pub"</pre>
+  </div></div>
+
+  <div class="step"><div class="dot">3</div><div>
+    <h4>Added the key to GitHub (signed in as Mohanvamsi4405)</h4>
+    <p>GitHub → profile picture → <b>Settings</b> → <b>SSH and GPG keys</b> → <b>New SSH key</b> → Title: <i>Windows Laptop</i> → Key type: <b>Authentication Key</b> → paste → <b>Add SSH key</b>.</p>
+  </div></div>
+
+  <div class="step"><div class="dot">4</div><div>
+    <h4>Added an alias to the SSH config file</h4>
+<pre>notepad "%USERPROFILE%\.ssh\config"</pre>
+    <p>Then added this block and saved:</p>
+<pre><span class="c"># Main Mohan 33 work repo</span>
+Host github-mohan33
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_mohan_github_33
+    IdentitiesOnly yes</pre>
+  </div></div>
+
+  <div class="step"><div class="dot">5</div><div>
+    <h4>Tested the connection</h4>
+<pre>ssh -T git@github-mohan33</pre>
+    <p>Result: <code>Hi Mohanvamsi4405! You've successfully authenticated…</code> ✅</p>
+  </div></div>
+
+  <div class="step"><div class="dot">6</div><div>
+    <h4>Pointed the repo at the new alias</h4>
+<pre>D:
+cd \GIT
+git remote set-url origin git@github-mohan33:Mohanvamsi4405/GIT_HUB_LEARNING.git
+git remote -v</pre>
+  </div></div>
+
+  <div class="step"><div class="dot">7</div><div>
+    <h4>Pushed the code</h4>
+<pre>git push -u origin main</pre>
+  </div></div>
+
+  <div class="note warn"><b>⚠ One thing still to fix</b>
+    The push now goes through <b>Mohanvamsi4405</b>'s key, but this repo's commit <i>author</i> is still set to <code>theaishastra</code> / <code>theaishastra@gmail.com</code> (from the global Git config). On GitHub, the commits will show up under <b>theaishastra</b>. To fix it for this repo only:
+<pre>cd /d D:\GIT
+git config user.name "Mohanvamsi4405"
+git config user.email "chitradamohanvamsi33@gmail.com"</pre>
+    This changes future commits only. It doesn't rewrite the ones you already made.
+  </div>
+</section>
+
+<!-- 2. HOW IT WORKS -->
+<section class="card" id="how">
+  <h2><span class="n">2</span>How it works</h2>
+  <p class="sub">GitHub works out which account you are from the <b>SSH key</b> you connect with. An alias (a fake hostname) tells SSH which key to use.</p>
+
+  <div class="flow">
+    <div class="box"><b>Repo remote URL</b><code>git@<u>github-mohan33</u>:Mohanvamsi4405/REPO.git</code></div>
+    <div class="arr">→</div>
+    <div class="box"><b>~/.ssh/config</b><code>Host github-mohan33</code><br>→ HostName github.com<br>→ use key <code>id_ed25519_mohan_github_33</code></div>
+    <div class="arr">→</div>
+    <div class="box"><b>GitHub</b>Matches the key to the account it was added to<br>→ <strong>Mohanvamsi4405</strong></div>
+  </div>
+
+  <div class="note info"><b>The key idea</b>
+    <code>git@github.com:…</code> uses your <b>default</b> key (theaishastra).<br>
+    <code>git@github-mohan33:…</code> uses the <b>Mohanvamsi4405</b> key.<br>
+    The only difference is the hostname in the URL. The SSH config file does the rest.
+  </div>
+  <p><code>IdentitiesOnly yes</code> is important. It makes SSH use <i>only</i> the key you named, so it can't log in with another key by mistake.</p>
+</section>
+
+<!-- 3. VARIABLES -->
+<section class="card pb" id="vars">
+  <h2><span class="n">3</span>The values you change</h2>
+  <p class="sub">In the commands below, anything shown like <span class="v">&lt;THIS&gt;</span> is a <b>value you replace</b>. Everything else is typed exactly as shown.</p>
+
+  <div class="tbl"><table>
+    <tr><th>Placeholder</th><th>What it means</th><th>Example (what I used)</th></tr>
+    <tr><td><span class="v">&lt;EMAIL&gt;</span></td><td>Email of the GitHub account (just a label on the key)</td><td><code>chitradamohanvamsi33@gmail.com</code></td></tr>
+    <tr><td><span class="v">&lt;KEY_NAME&gt;</span></td><td>File name for the new key. Must be <b>unique</b>, so you don't overwrite another key</td><td><code>id_ed25519_mohan_github_33</code></td></tr>
+    <tr><td><span class="v">&lt;ALIAS&gt;</span></td><td>Made-up hostname for this account. Any name works, but no spaces</td><td><code>github-mohan33</code></td></tr>
+    <tr><td><span class="v">&lt;GH_USER&gt;</span></td><td>GitHub username that owns the repo</td><td><code>Mohanvamsi4405</code></td></tr>
+    <tr><td><span class="v">&lt;REPO&gt;</span></td><td>Repository name on GitHub (create it on GitHub first)</td><td><code>GIT_HUB_LEARNING</code></td></tr>
+    <tr><td><span class="v">&lt;FOLDER&gt;</span></td><td>Local project folder</td><td><code>D:\GIT</code></td></tr>
+    <tr><td><span class="v">&lt;NAME&gt;</span></td><td>Name shown on commits</td><td><code>Mohanvamsi4405</code></td></tr>
+  </table></div>
+
+  <h3>How often each step is done</h3>
+  <div class="legend">
+    <span><span class="badge b-acct">Per account</span> once for each GitHub account</span>
+    <span><span class="badge b-repo">Per repo</span> once for each project folder</span>
+  </div>
+
+  <div class="note tip"><b>CMD or PowerShell?</b>
+    The commands here are for <b>Command Prompt (CMD)</b>. In <b>PowerShell</b>, replace <code>%USERPROFILE%</code> with <code>$env:USERPROFILE</code> and <code>type</code> with <code>Get-Content</code>.
+  </div>
+</section>
+
+<!-- 4. FROM SCRATCH -->
+<section class="card" id="scratch">
+  <h2><span class="n">4</span>From scratch: full setup</h2>
+  <p class="sub">Use this when setting up an account on a new computer, or when starting over from nothing.</p>
+
+  <div class="step"><div class="dot">0</div><div>
+    <h4>Check what keys already exist <span class="badge b-acct">Per account</span></h4>
+<pre>dir "%USERPROFILE%\.ssh"</pre>
+    <p>Pick a <span class="v">&lt;KEY_NAME&gt;</span> that isn't already in the list. If the folder doesn't exist, the next step creates it.</p>
+  </div></div>
+
+  <div class="step"><div class="dot">1</div><div>
+    <h4>Generate the key <span class="badge b-acct">Per account</span></h4>
+<pre>ssh-keygen -t ed25519 -C "<span class="v">&lt;EMAIL&gt;</span>" -f "%USERPROFILE%\.ssh\<span class="v">&lt;KEY_NAME&gt;</span>"</pre>
+    <p>Passphrase: press Enter to skip it, or type one for extra safety.</p>
+  </div></div>
+
+  <div class="step"><div class="dot">2</div><div>
+    <h4>Copy the public key <span class="badge b-acct">Per account</span></h4>
+<pre>type "%USERPROFILE%\.ssh\<span class="v">&lt;KEY_NAME&gt;</span>.pub"</pre>
+    <p>Shortcut that copies it straight to the clipboard:</p>
+<pre>type "%USERPROFILE%\.ssh\<span class="v">&lt;KEY_NAME&gt;</span>.pub" | clip</pre>
+    <div class="note danger"><b>Only the .pub file</b>
+      Copy only the file that ends in <code>.pub</code>. The file without <code>.pub</code> is your private key. Never paste it anywhere.</div>
+  </div></div>
+
+  <div class="step"><div class="dot">3</div><div>
+    <h4>Add it on GitHub <span class="badge b-acct">Per account</span></h4>
+    <p>Sign in as <span class="v">&lt;GH_USER&gt;</span> (an incognito window makes this easier) → <b>Settings → SSH and GPG keys → New SSH key</b> → type <b>Authentication Key</b> → paste → <b>Add SSH key</b>.</p>
+    <p>Direct link: <code>https://github.com/settings/keys</code></p>
+  </div></div>
+
+  <div class="step"><div class="dot">4</div><div>
+    <h4>Add the alias to the SSH config <span class="badge b-acct">Per account</span></h4>
+<pre>notepad "%USERPROFILE%\.ssh\config"</pre>
+    <p>Add this at the bottom (one block per account) and save:</p>
+<pre>Host <span class="v">&lt;ALIAS&gt;</span>
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/<span class="v">&lt;KEY_NAME&gt;</span>
+    IdentitiesOnly yes</pre>
+    <div class="note warn"><b>Notepad trap</b>
+      The file must be named exactly <code>config</code>, with <b>no</b> <code>.txt</code>. If Notepad asks to create a new file, click Yes. When saving, pick "All files" so it doesn't become <code>config.txt</code>.</div>
+  </div></div>
+
+  <div class="step"><div class="dot">5</div><div>
+    <h4>Test the connection <span class="badge b-acct">Per account</span></h4>
+<pre>ssh -T git@<span class="v">&lt;ALIAS&gt;</span></pre>
+    <p>Expected: <code>Hi <span class="v">&lt;GH_USER&gt;</span>! You've successfully authenticated…</code><br>The first time, type <code>yes</code> to trust github.com.</p>
+  </div></div>
+
+  <div class="step"><div class="dot">6</div><div>
+    <h4>Connect a project. Choose <b>one</b> option <span class="badge b-repo">Per repo</span></h4>
+
+    <p><b>Option A: a new local project you want to upload</b></p>
+<pre>cd /d <span class="v">&lt;FOLDER&gt;</span>
+git init
+git config user.name "<span class="v">&lt;NAME&gt;</span>"
+git config user.email "<span class="v">&lt;EMAIL&gt;</span>"
+git add .
+git commit -m "First commit"
+git branch -M main
+git remote add origin git@<span class="v">&lt;ALIAS&gt;</span>:<span class="v">&lt;GH_USER&gt;</span>/<span class="v">&lt;REPO&gt;</span>.git
+git push -u origin main</pre>
+
+    <p><b>Option B: an existing repo that already has a remote</b> (this is what I did)</p>
+<pre>cd /d <span class="v">&lt;FOLDER&gt;</span>
+git remote set-url origin git@<span class="v">&lt;ALIAS&gt;</span>:<span class="v">&lt;GH_USER&gt;</span>/<span class="v">&lt;REPO&gt;</span>.git
+git config user.name "<span class="v">&lt;NAME&gt;</span>"
+git config user.email "<span class="v">&lt;EMAIL&gt;</span>"
+git push -u origin main</pre>
+
+    <p><b>Option C: clone a repo from GitHub</b></p>
+<pre>git clone git@<span class="v">&lt;ALIAS&gt;</span>:<span class="v">&lt;GH_USER&gt;</span>/<span class="v">&lt;REPO&gt;</span>.git
+cd <span class="v">&lt;REPO&gt;</span>
+git config user.name "<span class="v">&lt;NAME&gt;</span>"
+git config user.email "<span class="v">&lt;EMAIL&gt;</span>"</pre>
+    <div class="note info"><b>Tip</b>
+      When GitHub shows a clone URL like <code>git@github.com:User/Repo.git</code>, replace <code>github.com</code> with your <span class="v">&lt;ALIAS&gt;</span>.</div>
+  </div></div>
+
+  <div class="step"><div class="dot">7</div><div>
+    <h4>Check it <span class="badge b-repo">Per repo</span></h4>
+<pre>git remote -v
+git config user.name
+git config user.email</pre>
+  </div></div>
+</section>
+
+<!-- 5. ADD NEW ACCOUNT -->
+<section class="card pb" id="new">
+  <h2><span class="n">5</span>Adding another account</h2>
+  <p class="sub">Your computer already has an SSH config and other keys. To add one more account (for example, a 5th one), repeat <b>steps 1–5</b> with new values. Don't touch the existing blocks.</p>
+
+  <h3>Worked example: adding a made-up account <code>newuser99</code></h3>
+<pre><span class="c">:: 1. New key (unique file name!)</span>
+ssh-keygen -t ed25519 -C "<span class="v">newuser99@gmail.com</span>" -f "%USERPROFILE%\.ssh\<span class="v">id_ed25519_newuser99</span>"
+
+<span class="c">:: 2. Copy public key to the clipboard</span>
+type "%USERPROFILE%\.ssh\<span class="v">id_ed25519_newuser99</span>.pub" | clip
+
+<span class="c">:: 3. Paste it at https://github.com/settings/keys  (signed in as newuser99)</span>
+
+<span class="c">:: 4. Append the alias to the config</span>
+notepad "%USERPROFILE%\.ssh\config"</pre>
+<pre><span class="c"># newuser99 account</span>
+Host <span class="v">github-newuser99</span>
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/<span class="v">id_ed25519_newuser99</span>
+    IdentitiesOnly yes</pre>
+<pre><span class="c">:: 5. Test</span>
+ssh -T git@<span class="v">github-newuser99</span>
+
+<span class="c">:: 6. Use it in a repo</span>
+git remote set-url origin git@<span class="v">github-newuser99</span>:<span class="v">newuser99</span>/<span class="v">my-repo</span>.git</pre>
+
+  <h3>Checklist</h3>
+  <ul class="check">
+    <li>The new key file name doesn't match any existing key</li>
+    <li>The public key (<code>.pub</code>) is added to the <b>correct</b> GitHub account</li>
+    <li>The new <code>Host</code> alias is unique in the config file</li>
+    <li><code>ssh -T git@&lt;ALIAS&gt;</code> greets the right username</li>
+    <li>The repo remote uses <code>git@&lt;ALIAS&gt;:</code>, not <code>git@github.com:</code></li>
+    <li>The repo's <code>user.name</code> and <code>user.email</code> are set to that account</li>
+  </ul>
+
+  <div class="note danger"><b>A key can belong to only one account</b>
+    GitHub won't let you add the same public key to two accounts ("Key is already in use"). Each account needs its own key.</div>
+</section>
+
+<!-- 6. SWITCHING -->
+<section class="card" id="repo">
+  <h2><span class="n">6</span>Using an account in a repo</h2>
+  <p class="sub">Which account a repo uses depends on two settings, and both need to match the account:</p>
+  <div class="tbl"><table>
+    <tr><th>Setting</th><th>Controls</th><th>Command</th></tr>
+    <tr><td><b>Remote URL</b></td><td>Which account <b>pushes</b> (needs write access)</td><td><code>git remote set-url origin git@&lt;ALIAS&gt;:&lt;GH_USER&gt;/&lt;REPO&gt;.git</code></td></tr>
+    <tr><td><b>user.name / user.email</b></td><td>Who appears as the <b>commit author</b></td><td><code>git config user.email "&lt;EMAIL&gt;"</code></td></tr>
+  </table></div>
+  <p>Without <code>--global</code>, <code>git config</code> applies to the current repo only, which is what you want when using several accounts.</p>
+</section>
+
+<!-- 7. CURRENT ACCOUNTS -->
+<section class="card" id="accounts">
+  <h2><span class="n">7</span>My accounts right now</h2>
+  <p class="sub">From <code>C:\Users\mohan\.ssh\config</code>. Use the alias in the URL column to pick an account.</p>
+  <div class="tbl"><table>
+    <tr><th>Account</th><th>Alias (Host)</th><th>Key file</th><th>Remote URL starts with</th></tr>
+    <tr><td>theaishastra (default)</td><td><code>github.com</code></td><td><code>id_ed25519</code></td><td><code>git@github.com:</code></td></tr>
+    <tr><td>MohanVamsi4455 (Jobs)</td><td><code>github-mohanvamsi4455</code></td><td><code>id_ed25519_mohanvamsi4455</code></td><td><code>git@github-mohanvamsi4455:</code></td></tr>
+    <tr><td>Wellytics</td><td><code>github-wellytics</code></td><td><code>id_ed25519_wellytics</code></td><td><code>git@github-wellytics:</code></td></tr>
+    <tr><td><b>Mohanvamsi4405</b> (new)</td><td><code>github-mohan33</code></td><td><code>id_ed25519_mohan_github_33</code></td><td><code>git@github-mohan33:</code></td></tr>
+  </table></div>
+</section>
+
+<!-- 8. TROUBLESHOOTING -->
+<section class="card pb" id="trouble">
+  <h2><span class="n">8</span>Troubleshooting</h2>
+  <div class="tbl"><table>
+    <tr><th style="width:34%">Problem</th><th>Cause → fix</th></tr>
+    <tr><td><code>Permission denied (publickey)</code></td><td>The key isn't on GitHub, or the path in the config is wrong. Check the <code>IdentityFile</code> path, then run <code>ssh -vT git@&lt;ALIAS&gt;</code> to see which key is tried.</td></tr>
+    <tr><td><code>Hi theaishastra!</code> instead of the new account</td><td>The remote still uses <code>github.com</code>, or <code>IdentitiesOnly yes</code> is missing. Fix the remote URL and the config block.</td></tr>
+    <tr><td><code>ERROR: Repository not found</code></td><td>The repo doesn't exist on GitHub yet, the name is misspelled, or this account has no access. Create the repo, or add the account as a collaborator.</td></tr>
+    <tr><td><code>Could not resolve hostname github-xxx</code></td><td>The alias isn't in the config, or the file is saved as <code>config.txt</code>. Check with <code>dir "%USERPROFILE%\.ssh"</code>.</td></tr>
+    <tr><td><code>Key is already in use</code> on GitHub</td><td>That key is already on another account. Make a new key for this account.</td></tr>
+    <tr><td>Commits show the wrong person on GitHub</td><td>The repo's <code>user.email</code> belongs to another account. Set it with <code>git config user.email "&lt;EMAIL&gt;"</code>.</td></tr>
+    <tr><td><code>failed to push… rejected (fetch first)</code></td><td>The GitHub repo has commits you don't have (for example, a README). Run <code>git pull origin main --rebase</code>, then push.</td></tr>
+  </table></div>
+
+  <h3>Useful check commands</h3>
+<pre><span class="c">:: Which account does an alias log in as?</span>
+ssh -T git@<span class="v">&lt;ALIAS&gt;</span>
+
+<span class="c">:: Verbose output (shows which key file is used)</span>
+ssh -vT git@<span class="v">&lt;ALIAS&gt;</span>
+
+<span class="c">:: Show the SSH config / keys</span>
+type "%USERPROFILE%\.ssh\config"
+dir "%USERPROFILE%\.ssh"
+
+<span class="c">:: Show the current repo's remote and author</span>
+git remote -v
+git config user.name &amp; git config user.email</pre>
+</section>
+
+<!-- 9. CHEAT SHEET -->
+<section class="card" id="cheat">
+  <h2><span class="n">9</span>Cheat sheet</h2>
+  <p class="sub">The whole process on one card. Replace the <span class="v">&lt;highlighted&gt;</span> values.</p>
+<pre><span class="c">:: ── Per account (one time) ──────────────────────────────</span>
+ssh-keygen -t ed25519 -C "<span class="v">&lt;EMAIL&gt;</span>" -f "%USERPROFILE%\.ssh\<span class="v">&lt;KEY_NAME&gt;</span>"
+type "%USERPROFILE%\.ssh\<span class="v">&lt;KEY_NAME&gt;</span>.pub" | clip       <span class="c">:: paste at github.com/settings/keys</span>
+notepad "%USERPROFILE%\.ssh\config"                <span class="c">:: add Host block (below)</span>
+ssh -T git@<span class="v">&lt;ALIAS&gt;</span>                              <span class="c">:: expect "Hi &lt;GH_USER&gt;!"</span>
+
+<span class="c">:: ── Per repo ─────────────────────────────────────────────</span>
+cd /d <span class="v">&lt;FOLDER&gt;</span>
+git remote set-url origin git@<span class="v">&lt;ALIAS&gt;</span>:<span class="v">&lt;GH_USER&gt;</span>/<span class="v">&lt;REPO&gt;</span>.git   <span class="c">:: or "remote add" if new</span>
+git config user.name  "<span class="v">&lt;NAME&gt;</span>"
+git config user.email "<span class="v">&lt;EMAIL&gt;</span>"
+git push -u origin main</pre>
+<pre><span class="c"># ~/.ssh/config block</span>
+Host <span class="v">&lt;ALIAS&gt;</span>
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/<span class="v">&lt;KEY_NAME&gt;</span>
+    IdentitiesOnly yes</pre>
+</section>
+
+<footer>GitHub Multi-Account SSH Guide · Windows · October 2026</footer>
+</main>
+</body>
+</html>
